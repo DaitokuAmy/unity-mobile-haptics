@@ -1,0 +1,13 @@
+{
+    "name": "com.daitokuamy.unitymobilehaptics",
+    "displayName": "Unity Mobile Haptics",
+    "version": "2.0.0",
+    "unity": "6000.0",
+    "license" : "MIT",
+    "dependencies": { },
+    "author": {
+        "name": "Hironori Ito",
+        "url": "https://github.com/DaitokuAmy"
+    },
+    "description": "This is a vibration playback library for Unity mobile development."
+}
