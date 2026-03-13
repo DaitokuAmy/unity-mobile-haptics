@@ -45,7 +45,7 @@ namespace UnityMobileHaptics.Sample {
         /// Loop 振動を再生
         /// </summary>
         /// <param name="type">振動種別</param>
-        public void PlayLoop(HapticType type) {
+        public void PlayLoop(ImpactHapticType type) {
             MobileHaptics.PlayLoop(type);
             RefreshStatus($"PlayLoop: {type}");
         }

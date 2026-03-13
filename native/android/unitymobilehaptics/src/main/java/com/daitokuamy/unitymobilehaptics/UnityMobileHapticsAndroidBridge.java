@@ -4,6 +4,9 @@ import android.content.Context;
 import android.os.Build;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.view.HapticFeedbackConstants;
+import android.view.View;
+import android.view.Window;
 
 import com.unity3d.player.UnityPlayer;
 
@@ -30,13 +33,19 @@ public final class UnityMobileHapticsAndroidBridge {
             return;
         }
 
-        long duration = getDurationMillis(hapticType);
-        int amplitude = getAmplitude(hapticType);
+        if (!isLoop && tryPerformViewHapticFeedback(hapticType)) {
+            return;
+        }
 
+        if (!isLoop && tryPlayPredefinedEffect(vibrator, hapticType)) {
+            return;
+        }
+
+        long duration = getDurationMillis(hapticType);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             VibrationEffect effect = isLoop
-                ? VibrationEffect.createWaveform(new long[] { 0L, duration, LOOP_PAUSE_MILLIS }, new int[] { 0, amplitude, 0 }, 0)
-                : VibrationEffect.createOneShot(duration, amplitude);
+                ? createLoopEffect(hapticType, duration)
+                : createFallbackOneShotEffect(hapticType, duration);
             vibrator.vibrate(effect);
             return;
         }
@@ -71,6 +80,127 @@ public final class UnityMobileHapticsAndroidBridge {
         }
 
         return (Vibrator)context.getSystemService(Context.VIBRATOR_SERVICE);
+    }
+
+    /**
+     * View ベースのシステムハプティクスを優先して再生する
+     */
+    private static boolean tryPerformViewHapticFeedback(int hapticType) {
+        View view = getDecorView();
+        if (view == null) {
+            return false;
+        }
+
+        int feedbackConstant = getFeedbackConstant(hapticType);
+        if (feedbackConstant == Integer.MIN_VALUE) {
+            return false;
+        }
+
+        return view.performHapticFeedback(feedbackConstant);
+    }
+
+    /**
+     * 振動種別に対応する定義済みエフェクトを再生する
+     */
+    private static boolean tryPlayPredefinedEffect(Vibrator vibrator, int hapticType) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return false;
+        }
+
+        VibrationEffect effect;
+        switch (hapticType) {
+            case 0:
+                effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK);
+                break;
+            case 4:
+                effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK);
+                break;
+            case 5:
+                effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK);
+                break;
+            case 6:
+                effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_HEAVY_CLICK);
+                break;
+            default:
+                return false;
+        }
+
+        vibrator.vibrate(effect);
+        return true;
+    }
+
+    /**
+     * 振動種別に対応する View ハプティクス定数を返す
+     */
+    private static int getFeedbackConstant(int hapticType) {
+        switch (hapticType) {
+            case 0:
+                if (Build.VERSION.SDK_INT >= 34) {
+                    return HapticFeedbackConstants.SEGMENT_TICK;
+                }
+
+                return HapticFeedbackConstants.CLOCK_TICK;
+            case 1:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    return HapticFeedbackConstants.CONFIRM;
+                }
+
+                return Integer.MIN_VALUE;
+            case 3:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    return HapticFeedbackConstants.REJECT;
+                }
+
+                return Integer.MIN_VALUE;
+            default:
+                return Integer.MIN_VALUE;
+        }
+    }
+
+    /**
+     * Fallback 用 OneShot エフェクトを生成する
+     */
+    private static VibrationEffect createFallbackOneShotEffect(int hapticType, long duration) {
+        if (hapticType == 1) {
+            return VibrationEffect.createWaveform(new long[] { 0L, 24L, 36L, 32L }, -1);
+        }
+
+        if (hapticType == 2) {
+            return VibrationEffect.createWaveform(new long[] { 0L, 20L, 30L, 20L }, -1);
+        }
+
+        if (hapticType == 3) {
+            return VibrationEffect.createWaveform(new long[] { 0L, 28L, 40L, 28L, 36L, 36L }, -1);
+        }
+
+        return VibrationEffect.createOneShot(duration, getAmplitude(hapticType));
+    }
+
+    /**
+     * Loop 用エフェクトを生成する
+     */
+    private static VibrationEffect createLoopEffect(int hapticType, long duration) {
+        return VibrationEffect.createWaveform(
+            new long[] { 0L, duration, LOOP_PAUSE_MILLIS },
+            new int[] { 0, getAmplitude(hapticType), 0 },
+            0
+        );
+    }
+
+    /**
+     * currentActivity から描画中 View を取得する
+     */
+    private static View getDecorView() {
+        if (UnityPlayer.currentActivity == null) {
+            return null;
+        }
+
+        Window window = UnityPlayer.currentActivity.getWindow();
+        if (window == null) {
+            return null;
+        }
+
+        return window.getDecorView();
     }
 
     /**

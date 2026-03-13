@@ -14,6 +14,9 @@ namespace UnityMobileHaptics.Sample {
         private HapticType _hapticType = HapticType.Selection;
 
         [SerializeField]
+        private ImpactHapticType _loopHapticType = ImpactHapticType.Medium;
+
+        [SerializeField]
         private bool _isLoop;
 
         [SerializeField]
@@ -54,7 +57,7 @@ namespace UnityMobileHaptics.Sample {
             }
 
             if (_isLoop) {
-                _controller.PlayLoop(_hapticType);
+                _controller.PlayLoop(_loopHapticType);
                 return;
             }
 
@@ -66,11 +69,13 @@ namespace UnityMobileHaptics.Sample {
         /// </summary>
         /// <param name="controller">操作先の controller</param>
         /// <param name="hapticType">振動種別</param>
+        /// <param name="loopHapticType">Loop 用振動種別</param>
         /// <param name="isLoop">Loop 再生する場合は true</param>
         /// <param name="isStopButton">停止ボタンとして扱う場合は true</param>
-        public void Setup(HapticsSampleController controller, HapticType hapticType, bool isLoop, bool isStopButton) {
+        public void Setup(HapticsSampleController controller, HapticType hapticType, ImpactHapticType loopHapticType, bool isLoop, bool isStopButton) {
             _controller = controller;
             _hapticType = hapticType;
+            _loopHapticType = loopHapticType;
             _isLoop = isLoop;
             _isStopButton = isStopButton;
         }

@@ -25,7 +25,7 @@ namespace UnityMobileHaptics {
 
         public static void Play(HapticType type);
 
-        public static void PlayLoop(HapticType type);
+        public static void PlayLoop(ImpactHapticType type);
 
         public static void Stop();
     }
@@ -33,7 +33,7 @@ namespace UnityMobileHaptics {
 ```
 
 - `Play` は単発振動を再生する
-- `PlayLoop` は停止されるまで継続的に振動を再生する
+- `PlayLoop` は `ImpactHapticType` で指定した衝撃系振動のみを停止されるまで継続再生する
 - `Stop` は単発、Loop を問わず再生中の振動を停止する
 
 ## HapticType
@@ -46,6 +46,12 @@ namespace UnityMobileHaptics {
 - `MediumImpact`
 - `HeavyImpact`
 
+## ImpactHapticType
+
+- `Light`
+- `Medium`
+- `Heavy`
+
 ## プラットフォーム方針
 
 ### Android
@@ -53,13 +59,13 @@ namespace UnityMobileHaptics {
 - Android 標準 API を利用する
 - OS バージョンに応じて利用機能を切り替える
 - ネイティブ実装は `.aar` としてパッケージに含める
-- Loop は Android の実現方法に合わせて継続再生または近似動作で実装する
+- Loop は `ImpactHapticType` のみを対象に、Android の実現方法に合わせて継続再生または近似動作で実装する
 
 ### iOS
 
 - iOS 標準のハプティクス API を利用する
 - `HapticType` をネイティブ機能へマッピングする
-- Loop は iOS の制約に応じて実装可否と表現方法を検討する
+- Loop は `ImpactHapticType` のみを対象に、iOS の制約に応じた近似再生で実装する
 
 ### Unsupported
 
@@ -78,7 +84,7 @@ namespace UnityMobileHaptics {
 
 - `HapticType` の最終セット
 - パターン再生を初期版に含めるか
-- `PlayLoop` を初期版に含めるか
+- `PlayLoop` の API をこの構成で確定とするか
 - `PlayLoop` の停止条件とアプリ非アクティブ時の扱い
 - iOS 実装方式の詳細
 - Android 実装方式の詳細

@@ -23,9 +23,9 @@ namespace UnityMobileHaptics.Platforms {
         }
 
         /// <inheritdoc />
-        public void PlayLoop(HapticType type) {
+        public void PlayLoop(ImpactHapticType type) {
 #if UNITY_IOS && !UNITY_EDITOR
-            UnityMobileHapticsPlay((int)type, true);
+            UnityMobileHapticsPlay((int)ToHapticType(type), true);
 #endif
         }
 
@@ -37,6 +37,24 @@ namespace UnityMobileHaptics.Platforms {
         }
 
 #if UNITY_IOS && !UNITY_EDITOR
+        /// <summary>
+        /// Loop 用振動種別をネイティブ用の種別へ変換
+        /// </summary>
+        /// <param name="type">Loop 用振動種別</param>
+        /// <returns>ネイティブ側と整合する振動種別</returns>
+        private static HapticType ToHapticType(ImpactHapticType type) {
+            switch (type) {
+                case ImpactHapticType.Light:
+                    return HapticType.LightImpact;
+                case ImpactHapticType.Medium:
+                    return HapticType.MediumImpact;
+                case ImpactHapticType.Heavy:
+                    return HapticType.HeavyImpact;
+                default:
+                    return HapticType.MediumImpact;
+            }
+        }
+
         /// <summary>
         /// iOS ネイティブブリッジ経由で振動を再生
         /// </summary>

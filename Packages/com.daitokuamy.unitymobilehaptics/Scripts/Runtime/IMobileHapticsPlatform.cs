@@ -16,7 +16,7 @@ namespace UnityMobileHaptics {
         /// 停止されるまで継続振動を再生
         /// </summary>
         /// <param name="type">振動種別</param>
-        void PlayLoop(HapticType type);
+        void PlayLoop(ImpactHapticType type);
 
         /// <summary>
         /// 再生中の振動を停止

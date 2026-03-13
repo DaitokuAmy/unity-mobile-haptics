@@ -13,6 +13,7 @@ Packages/com.daitokuamy.unitymobilehaptics/
     Runtime/
       MobileHaptics.cs
       HapticType.cs
+      ImpactHapticType.cs
       HapticPlayMode.cs
       IMobileHapticsPlatform.cs
       Internal/
@@ -47,6 +48,11 @@ Packages/com.daitokuamy.unitymobilehaptics/
 - 振動種別を表す enum
 - 呼び出し側はネイティブ API ではなくこの型を使う
 
+### `ImpactHapticType`
+
+- Loop 再生可能な衝撃系振動種別を表す enum
+- `PlayLoop` の引数として利用する
+
 ### `HapticPlayMode`
 
 - 単発再生か Loop 再生かを表す enum
@@ -76,11 +82,13 @@ Packages/com.daitokuamy.unitymobilehaptics/
 
 - Android 向けの振動処理を実装する
 - OS バージョン差分を吸収する
+- `Play` は通知系と衝撃系の両方を扱い、`PlayLoop` は `ImpactHapticType` のみを扱う
 
 ### `IosMobileHapticsPlatform`
 
 - iOS 向けの振動処理を実装する
 - `HapticType` を iOS ネイティブ機能へ変換する
+- `PlayLoop` は `ImpactHapticType` を iOS 側の impact 表現へ変換する
 
 ### `UnsupportedMobileHapticsPlatform`
 

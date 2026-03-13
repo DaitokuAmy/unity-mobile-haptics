@@ -158,15 +158,11 @@ namespace UnityMobileHaptics.Editor {
             );
             DrawActionSection(
                 "Loop",
-                "継続再生の確認",
+                "Impact 系のみ継続再生に対応",
                 new Color(0.98f, 0.65f, 0.3f),
-                ("Selection Loop", () => MobileHaptics.PlayLoop(HapticType.Selection)),
-                ("Success Loop", () => MobileHaptics.PlayLoop(HapticType.Success)),
-                ("Warning Loop", () => MobileHaptics.PlayLoop(HapticType.Warning)),
-                ("Error Loop", () => MobileHaptics.PlayLoop(HapticType.Error)),
-                ("Light Loop", () => MobileHaptics.PlayLoop(HapticType.LightImpact)),
-                ("Medium Loop", () => MobileHaptics.PlayLoop(HapticType.MediumImpact)),
-                ("Heavy Loop", () => MobileHaptics.PlayLoop(HapticType.HeavyImpact))
+                ("Light Loop", () => MobileHaptics.PlayLoop(ImpactHapticType.Light)),
+                ("Medium Loop", () => MobileHaptics.PlayLoop(ImpactHapticType.Medium)),
+                ("Heavy Loop", () => MobileHaptics.PlayLoop(ImpactHapticType.Heavy))
             );
             DrawActionSection(
                 "Control",

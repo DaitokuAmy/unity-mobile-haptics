@@ -10,7 +10,7 @@ namespace UnityMobileHaptics.Platforms {
         }
 
         /// <inheritdoc />
-        public void PlayLoop(HapticType type) {
+        public void PlayLoop(ImpactHapticType type) {
         }
 
         /// <inheritdoc />

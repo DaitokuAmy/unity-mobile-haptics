@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace UnityMobileHaptics.Platforms {
     /// <summary>
     /// Android 向け振動実装
@@ -29,9 +31,9 @@ namespace UnityMobileHaptics.Platforms {
         }
 
         /// <inheritdoc />
-        public void PlayLoop(HapticType type) {
+        public void PlayLoop(ImpactHapticType type) {
 #if UNITY_ANDROID && !UNITY_EDITOR
-            if (TryInvokeBridge("play", (int)type, true)) {
+            if (TryInvokeBridge("play", (int)ToHapticType(type), true)) {
                 return;
             }
 #endif
@@ -47,6 +49,24 @@ namespace UnityMobileHaptics.Platforms {
         }
 
 #if UNITY_ANDROID && !UNITY_EDITOR
+        /// <summary>
+        /// Loop 用振動種別をネイティブ用の種別へ変換
+        /// </summary>
+        /// <param name="type">Loop 用振動種別</param>
+        /// <returns>ネイティブ側と整合する振動種別</returns>
+        private static HapticType ToHapticType(ImpactHapticType type) {
+            switch (type) {
+                case ImpactHapticType.Light:
+                    return HapticType.LightImpact;
+                case ImpactHapticType.Medium:
+                    return HapticType.MediumImpact;
+                case ImpactHapticType.Heavy:
+                    return HapticType.HeavyImpact;
+                default:
+                    return HapticType.MediumImpact;
+            }
+        }
+
         /// <summary>
         /// Android ネイティブブリッジを安全に呼び出す
         /// </summary>

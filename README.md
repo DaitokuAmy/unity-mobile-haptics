@@ -7,7 +7,7 @@ Unity のモバイル向けハプティクス再生ライブラリです。`iOS`
 ## Features
 
 - `MobileHaptics.Play(...)` で単発のハプティクスを再生
-- `MobileHaptics.PlayLoop(...)` で継続再生を開始し、`MobileHaptics.Stop()` で停止
+- `MobileHaptics.PlayLoop(...)` で `Impact` 系のみ継続再生を開始し、`MobileHaptics.Stop()` で停止
 - `Selection` / `Success` / `Warning` / `Error` / `LightImpact` / `MediumImpact` / `HeavyImpact` をサポート
 - `UnityEditor` 上では Simulation Window で再生状態を視覚的に確認可能
 - 未対応環境では安全に no-op として動作
@@ -67,7 +67,7 @@ public sealed class HapticsExample : MonoBehaviour {
     }
 
     public void StartLoop() {
-        MobileHaptics.PlayLoop(HapticType.MediumImpact);
+        MobileHaptics.PlayLoop(ImpactHapticType.Medium);
     }
 
     public void StopLoop() {
@@ -85,7 +85,7 @@ public static class MobileHaptics {
     public static bool IsSupported { get; }
 
     public static void Play(HapticType type);
-    public static void PlayLoop(HapticType type);
+    public static void PlayLoop(ImpactHapticType type);
     public static void Stop();
 }
 ```
@@ -94,8 +94,8 @@ public static class MobileHaptics {
   - 現在の実行環境でハプティクス再生に対応している場合は `true`
 - `Play(HapticType type)`
   - 単発のハプティクスを再生
-- `PlayLoop(HapticType type)`
-  - 継続再生を開始
+- `PlayLoop(ImpactHapticType type)`
+  - `Light` / `Medium` / `Heavy` の `Impact` 系のみ継続再生を開始
 - `Stop()`
   - 再生中のハプティクスを停止
 
@@ -110,6 +110,14 @@ public static class MobileHaptics {
 - `LightImpact`
 - `MediumImpact`
 - `HeavyImpact`
+
+### `ImpactHapticType`
+
+Loop 再生で利用できる振動種別は以下です。
+
+- `Light`
+- `Medium`
+- `Heavy`
 
 ## Platform Notes
 
