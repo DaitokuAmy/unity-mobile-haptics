@@ -1,0 +1,7 @@
+com.daitokuamy.unitymobilehaptics-pngs-0 D:\GitHub\Private\unity-mobile-haptics\native\android\unitymobilehaptics\build\generated\res\pngs\release
+com.daitokuamy.unitymobilehaptics-resValues-1 D:\GitHub\Private\unity-mobile-haptics\native\android\unitymobilehaptics\build\generated\res\resValues\release
+com.daitokuamy.unitymobilehaptics-mergeReleaseResources-2 D:\GitHub\Private\unity-mobile-haptics\native\android\unitymobilehaptics\build\intermediates\incremental\release\mergeReleaseResources\merged.dir
+com.daitokuamy.unitymobilehaptics-mergeReleaseResources-3 D:\GitHub\Private\unity-mobile-haptics\native\android\unitymobilehaptics\build\intermediates\incremental\release\mergeReleaseResources\stripped.dir
+com.daitokuamy.unitymobilehaptics-release-4 D:\GitHub\Private\unity-mobile-haptics\native\android\unitymobilehaptics\build\intermediates\merged_res\release\mergeReleaseResources
+com.daitokuamy.unitymobilehaptics-main-5 D:\GitHub\Private\unity-mobile-haptics\native\android\unitymobilehaptics\src\main\res
+com.daitokuamy.unitymobilehaptics-release-6 D:\GitHub\Private\unity-mobile-haptics\native\android\unitymobilehaptics\src\release\res

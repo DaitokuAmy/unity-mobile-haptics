@@ -1,7 +1,9 @@
 {
     "name": "UnityMobileHaptics.Editor",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "UnityMobileHaptics"
+    ],
     "includePlatforms": [
         "Editor"
     ],

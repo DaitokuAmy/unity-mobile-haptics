@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.daitokuamy.unitydebugmenu": {
+      "version": "https://github.com/DaitokuAmy/unity-debug-menu.git?path=/Packages/com.daitokuamy.unitydebugmenu",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "34c3bee7943a9ff78a8af9b6e74f918218cf202c"
+    },
     "com.daitokuamy.unitymobilehaptics": {
       "version": "file:com.daitokuamy.unitymobilehaptics",
       "depth": 0,
