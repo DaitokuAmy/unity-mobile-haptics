@@ -18,14 +18,14 @@ namespace UnityMobileHaptics.Platforms {
         /// <inheritdoc />
         public void Play(HapticType type) {
 #if UNITY_IOS && !UNITY_EDITOR
-            UnityMobileHapticsPlay((int)type, false);
+            UnityMobileHapticsPlay((int)type);
 #endif
         }
 
         /// <inheritdoc />
-        public void PlayLoop(ImpactHapticType type) {
+        public void PlayPulse(float intensity, float durationSeconds, bool loop) {
 #if UNITY_IOS && !UNITY_EDITOR
-            UnityMobileHapticsPlay((int)ToHapticType(type), true);
+            UnityMobileHapticsPlayPulse(intensity, durationSeconds, loop);
 #endif
         }
 
@@ -38,30 +38,20 @@ namespace UnityMobileHaptics.Platforms {
 
 #if UNITY_IOS && !UNITY_EDITOR
         /// <summary>
-        /// Loop 用振動種別をネイティブ用の種別へ変換
-        /// </summary>
-        /// <param name="type">Loop 用振動種別</param>
-        /// <returns>ネイティブ側と整合する振動種別</returns>
-        private static HapticType ToHapticType(ImpactHapticType type) {
-            switch (type) {
-                case ImpactHapticType.Light:
-                    return HapticType.LightImpact;
-                case ImpactHapticType.Medium:
-                    return HapticType.MediumImpact;
-                case ImpactHapticType.Heavy:
-                    return HapticType.HeavyImpact;
-                default:
-                    return HapticType.MediumImpact;
-            }
-        }
-
-        /// <summary>
         /// iOS ネイティブブリッジ経由で振動を再生
         /// </summary>
         /// <param name="hapticType">振動種別</param>
+        [DllImport("__Internal")]
+        private static extern void UnityMobileHapticsPlay(int hapticType);
+
+        /// <summary>
+        /// iOS ネイティブブリッジ経由で可変制御振動を再生
+        /// </summary>
+        /// <param name="intensity">振動強度</param>
+        /// <param name="durationSeconds">振動時間</param>
         /// <param name="isLoop">継続再生する場合は true</param>
         [DllImport("__Internal")]
-        private static extern void UnityMobileHapticsPlay(int hapticType, bool isLoop);
+        private static extern void UnityMobileHapticsPlayPulse(float intensity, float durationSeconds, bool isLoop);
 
         /// <summary>
         /// iOS ネイティブブリッジ経由で振動を停止

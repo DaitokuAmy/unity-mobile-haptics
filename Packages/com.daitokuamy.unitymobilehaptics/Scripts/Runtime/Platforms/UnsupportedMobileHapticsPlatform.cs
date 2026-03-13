@@ -10,7 +10,7 @@ namespace UnityMobileHaptics.Platforms {
         }
 
         /// <inheritdoc />
-        public void PlayLoop(ImpactHapticType type) {
+        public void PlayPulse(float intensity, float durationSeconds, bool loop) {
         }
 
         /// <inheritdoc />

@@ -16,20 +16,29 @@ namespace UnityMobileHaptics.Editor {
         /// <summary>実行経路が実機再生をサポートしている場合は true</summary>
         public bool IsSupported { get; private set; }
 
-        /// <summary>最後に再生要求された振動種別</summary>
+        /// <summary>最後に再生要求されたネイティブ振動種別</summary>
         public HapticType LastType { get; private set; }
 
-        /// <summary>表示用の最後の振動種別</summary>
-        public string LastTypeText => HasPlaybackRequest ? LastType.ToString() : "None";
+        /// <summary>最後の再生要求が可変制御振動の場合は true</summary>
+        public bool IsPulsePlayback { get; private set; }
+
+        /// <summary>最後の可変制御振動の強度</summary>
+        public float PulseIntensity { get; private set; }
+
+        /// <summary>最後の可変制御振動の時間</summary>
+        public float PulseDurationSeconds { get; private set; }
+
+        /// <summary>ループ再生の場合は true</summary>
+        public bool IsLoopMode { get; private set; }
+
+        /// <summary>表示用の最後の振動名</summary>
+        public string LastTypeText => !HasPlaybackRequest ? "None" : IsPulsePlayback ? "Pulse" : LastType.ToString();
 
         /// <summary>表示用の再生モード文字列</summary>
-        public string PlayModeText => HasPlaybackRequest ? _playMode.ToString() : "None";
+        public string PlayModeText => !HasPlaybackRequest ? "None" : IsLoopMode ? "Loop" : "OneShot";
 
         /// <summary>最後に状態更新された UTC 時刻</summary>
         public DateTime LastUpdatedUtc { get; private set; }
-
-        /// <summary>表示用の最終更新時刻文字列</summary>
-        public string LastUpdatedText => LastUpdatedUtc == DateTime.MinValue ? "Never" : LastUpdatedUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
 
         /// <summary>現在の表示上で再生中の場合は true</summary>
         public bool IsActiveVisual { get; private set; }
@@ -37,10 +46,10 @@ namespace UnityMobileHaptics.Editor {
         /// <summary>現在の表示用強度</summary>
         public float VisualIntensity { get; private set; }
 
-        /// <summary>Oneshot の進行率</summary>
-        public float OneShotProgress { get; private set; }
+        /// <summary>現在の進行率</summary>
+        public float Progress { get; private set; }
 
-        /// <summary>Oneshot の残り秒数</summary>
+        /// <summary>残り秒数</summary>
         public float RemainingSeconds { get; private set; }
 
         /// <summary>現在の種別に対する想定再生時間</summary>
@@ -48,11 +57,6 @@ namespace UnityMobileHaptics.Editor {
 
         /// <summary>表示アクセント色</summary>
         public Color AccentColor { get; private set; }
-
-        /// <summary>現在の再生が Loop の場合は true</summary>
-        public bool IsLoopMode => _playMode == HapticPlayMode.Loop;
-
-        private HapticPlayMode _playMode;
 
         /// <summary>
         /// Runtime 側の状態を読み取り直す
@@ -62,12 +66,15 @@ namespace UnityMobileHaptics.Editor {
             IsPlaying = MobileHapticsEditorBridge.IsPlaying;
             IsSupported = MobileHapticsEditorBridge.IsSupported;
             LastType = MobileHapticsEditorBridge.LastType;
-            _playMode = MobileHapticsEditorBridge.PlayMode;
+            IsPulsePlayback = MobileHapticsEditorBridge.IsPulsePlayback;
+            IsLoopMode = MobileHapticsEditorBridge.IsLoopingPulse;
+            PulseIntensity = MobileHapticsEditorBridge.PulseIntensity;
+            PulseDurationSeconds = MobileHapticsEditorBridge.PulseDurationSeconds;
             LastUpdatedUtc = MobileHapticsEditorBridge.LastUpdatedUtcTicks > 0
                 ? new DateTime(MobileHapticsEditorBridge.LastUpdatedUtcTicks, DateTimeKind.Utc)
                 : DateTime.MinValue;
-            ExpectedDurationSeconds = GetExpectedDuration(LastType);
-            AccentColor = GetAccentColor(LastType);
+            ExpectedDurationSeconds = GetExpectedDuration();
+            AccentColor = GetAccentColor();
             Tick(EditorTime());
         }
 
@@ -76,20 +83,17 @@ namespace UnityMobileHaptics.Editor {
         /// </summary>
         public void Tick(double nowUtcSeconds) {
             if (!HasPlaybackRequest || LastUpdatedUtc == DateTime.MinValue) {
-                IsActiveVisual = false;
-                VisualIntensity = 0f;
-                OneShotProgress = 0f;
-                RemainingSeconds = 0f;
+                ResetVisualState();
                 return;
             }
 
             var elapsedSeconds = Math.Max(0d, nowUtcSeconds - new DateTimeOffset(LastUpdatedUtc).ToUnixTimeMilliseconds() / 1000d);
-            if (_playMode == HapticPlayMode.OneShot) {
-                UpdateOneShot(elapsedSeconds);
+            if (IsLoopMode) {
+                UpdateLoop(elapsedSeconds);
                 return;
             }
 
-            UpdateLoop(elapsedSeconds);
+            UpdateOneShot(elapsedSeconds);
         }
 
         /// <summary>
@@ -99,7 +103,7 @@ namespace UnityMobileHaptics.Editor {
             if (!IsPlaying) {
                 IsActiveVisual = false;
                 VisualIntensity = 0f;
-                OneShotProgress = 1f;
+                Progress = 1f;
                 RemainingSeconds = 0f;
                 return;
             }
@@ -107,11 +111,11 @@ namespace UnityMobileHaptics.Editor {
             var duration = Mathf.Max(ExpectedDurationSeconds, 0.01f);
             var progress = Mathf.Clamp01((float)(elapsedSeconds / duration));
             var pulse = Mathf.Sin(progress * Mathf.PI);
-            var strength = GetBaseStrength(LastType);
+            var strength = GetBaseStrength();
 
             IsActiveVisual = progress < 1f;
             VisualIntensity = IsActiveVisual ? pulse * strength : 0f;
-            OneShotProgress = progress;
+            Progress = progress;
             RemainingSeconds = IsActiveVisual ? Mathf.Max(0f, duration - (float)elapsedSeconds) : 0f;
         }
 
@@ -120,20 +124,20 @@ namespace UnityMobileHaptics.Editor {
         /// </summary>
         private void UpdateLoop(double elapsedSeconds) {
             if (!IsPlaying) {
-                IsActiveVisual = false;
-                VisualIntensity = 0f;
-                OneShotProgress = 0f;
-                RemainingSeconds = 0f;
+                ResetVisualState();
                 return;
             }
 
-            var cycle = Mathf.Max(ExpectedDurationSeconds, 0.18f) * 1.6f;
-            var phase = Mathf.Repeat((float)(elapsedSeconds / cycle), 1f);
-            var wave = 0.35f + Mathf.Sin(phase * Mathf.PI * 2f) * 0.25f + 0.4f;
+            var pulseDuration = Mathf.Max(ExpectedDurationSeconds, 0.05f);
+            var cycle = pulseDuration + 0.04f;
+            var phaseSeconds = (float)(elapsedSeconds % cycle);
+            var activeSeconds = Mathf.Min(phaseSeconds, pulseDuration);
+            var activeProgress = Mathf.Clamp01(activeSeconds / pulseDuration);
+            var pulse = Mathf.Sin(activeProgress * Mathf.PI);
 
-            IsActiveVisual = true;
-            VisualIntensity = Mathf.Clamp01(wave * GetBaseStrength(LastType));
-            OneShotProgress = phase;
+            IsActiveVisual = phaseSeconds <= pulseDuration;
+            VisualIntensity = IsActiveVisual ? pulse * GetBaseStrength() : 0f;
+            Progress = Mathf.Clamp01(phaseSeconds / cycle);
             RemainingSeconds = 0f;
         }
 
@@ -145,10 +149,14 @@ namespace UnityMobileHaptics.Editor {
         }
 
         /// <summary>
-        /// 振動種別ごとの想定再生時間を返す
+        /// 見た目上の再生時間を返す
         /// </summary>
-        private static float GetExpectedDuration(HapticType type) {
-            switch (type) {
+        private float GetExpectedDuration() {
+            if (IsPulsePlayback) {
+                return Mathf.Max(PulseDurationSeconds, 0.01f);
+            }
+
+            switch (LastType) {
                 case HapticType.Selection:
                     return 0.08f;
                 case HapticType.Success:
@@ -157,22 +165,20 @@ namespace UnityMobileHaptics.Editor {
                     return 0.24f;
                 case HapticType.Error:
                     return 0.3f;
-                case HapticType.LightImpact:
-                    return 0.09f;
-                case HapticType.MediumImpact:
-                    return 0.13f;
-                case HapticType.HeavyImpact:
-                    return 0.18f;
                 default:
                     return 0.12f;
             }
         }
 
         /// <summary>
-        /// 振動種別ごとの基礎強度を返す
+        /// 見た目上の強度を返す
         /// </summary>
-        private static float GetBaseStrength(HapticType type) {
-            switch (type) {
+        private float GetBaseStrength() {
+            if (IsPulsePlayback) {
+                return Mathf.Clamp01(PulseIntensity);
+            }
+
+            switch (LastType) {
                 case HapticType.Selection:
                     return 0.3f;
                 case HapticType.Success:
@@ -181,22 +187,22 @@ namespace UnityMobileHaptics.Editor {
                     return 0.72f;
                 case HapticType.Error:
                     return 0.95f;
-                case HapticType.LightImpact:
-                    return 0.4f;
-                case HapticType.MediumImpact:
-                    return 0.68f;
-                case HapticType.HeavyImpact:
-                    return 0.9f;
                 default:
                     return 0.5f;
             }
         }
 
         /// <summary>
-        /// 振動種別ごとのアクセント色を返す
+        /// 表示色を返す
         /// </summary>
-        private static Color GetAccentColor(HapticType type) {
-            switch (type) {
+        private Color GetAccentColor() {
+            if (IsPulsePlayback) {
+                return IsLoopMode
+                    ? new Color(0.98f, 0.65f, 0.3f)
+                    : new Color(0.93f, 0.48f, 0.37f);
+            }
+
+            switch (LastType) {
                 case HapticType.Selection:
                     return new Color(0.37f, 0.73f, 0.96f);
                 case HapticType.Success:
@@ -205,15 +211,19 @@ namespace UnityMobileHaptics.Editor {
                     return new Color(0.98f, 0.73f, 0.28f);
                 case HapticType.Error:
                     return new Color(0.96f, 0.39f, 0.37f);
-                case HapticType.LightImpact:
-                    return new Color(0.54f, 0.76f, 0.98f);
-                case HapticType.MediumImpact:
-                    return new Color(0.66f, 0.54f, 0.98f);
-                case HapticType.HeavyImpact:
-                    return new Color(0.98f, 0.48f, 0.79f);
                 default:
                     return new Color(0.7f, 0.78f, 0.88f);
             }
+        }
+
+        /// <summary>
+        /// 表示状態を初期化する
+        /// </summary>
+        private void ResetVisualState() {
+            IsActiveVisual = false;
+            VisualIntensity = 0f;
+            Progress = 0f;
+            RemainingSeconds = 0f;
         }
     }
 }

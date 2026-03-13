@@ -97,7 +97,7 @@ namespace UnityMobileHaptics.Editor {
             if (state.IsLoopMode) {
                 if (state.IsActiveVisual) {
                     var segmentWidth = trackRect.width * 0.18f;
-                    var startX = trackRect.x + (trackRect.width - segmentWidth) * state.OneShotProgress;
+                    var startX = trackRect.x + (trackRect.width - segmentWidth) * state.Progress;
                     var fillRect = new Rect(startX, trackRect.y, segmentWidth, trackRect.height);
                     EditorGUI.DrawRect(fillRect, state.AccentColor);
                     GUI.Label(new Rect(trackRect.x, rect.y + 40f, rect.width - 28f, 18f), "Loop pulse is cycling", _captionStyle);
@@ -109,7 +109,7 @@ namespace UnityMobileHaptics.Editor {
                 return;
             }
 
-            var progress = state.IsActiveVisual ? state.OneShotProgress : 1f;
+            var progress = state.IsActiveVisual ? state.Progress : 1f;
             var fillRectOneShot = new Rect(trackRect.x, trackRect.y, trackRect.width * progress, trackRect.height);
             EditorGUI.DrawRect(fillRectOneShot, state.AccentColor);
 
@@ -149,20 +149,20 @@ namespace UnityMobileHaptics.Editor {
                 ("Error", () => MobileHaptics.Play(HapticType.Error))
             );
             DrawActionSection(
-                "Impact",
-                "強度差のある OneShot",
-                new Color(0.65f, 0.56f, 0.98f),
-                ("Light", () => MobileHaptics.Play(HapticType.LightImpact)),
-                ("Medium", () => MobileHaptics.Play(HapticType.MediumImpact)),
-                ("Heavy", () => MobileHaptics.Play(HapticType.HeavyImpact))
+                "Pulse",
+                "強度と時間を指定する可変制御振動",
+                new Color(0.93f, 0.48f, 0.37f),
+                ("Soft", () => MobileHaptics.PlayPulse(0.25f, 0.05f)),
+                ("Medium", () => MobileHaptics.PlayPulse(0.55f, 0.12f)),
+                ("Strong", () => MobileHaptics.PlayPulse(0.9f, 0.2f))
             );
             DrawActionSection(
                 "Loop",
-                "Impact 系のみ継続再生に対応",
+                "Pulse を停止まで反復再生",
                 new Color(0.98f, 0.65f, 0.3f),
-                ("Light Loop", () => MobileHaptics.PlayLoop(ImpactHapticType.Light)),
-                ("Medium Loop", () => MobileHaptics.PlayLoop(ImpactHapticType.Medium)),
-                ("Heavy Loop", () => MobileHaptics.PlayLoop(ImpactHapticType.Heavy))
+                ("Loop Soft", () => MobileHaptics.PlayPulse(0.25f, 0.05f, true)),
+                ("Loop Mid", () => MobileHaptics.PlayPulse(0.55f, 0.12f, true)),
+                ("Loop Strong", () => MobileHaptics.PlayPulse(0.9f, 0.2f, true))
             );
             DrawActionSection(
                 "Control",

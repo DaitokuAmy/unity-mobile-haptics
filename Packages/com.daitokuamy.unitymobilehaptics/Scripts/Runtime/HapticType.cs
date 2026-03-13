@@ -14,14 +14,5 @@ namespace UnityMobileHaptics {
 
         /// <summary>エラー通知向けの振動</summary>
         Error,
-
-        /// <summary>軽い衝撃表現向けの振動</summary>
-        LightImpact,
-
-        /// <summary>中程度の衝撃表現向けの振動</summary>
-        MediumImpact,
-
-        /// <summary>強い衝撃表現向けの振動</summary>
-        HeavyImpact,
     }
 }

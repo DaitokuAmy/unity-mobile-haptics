@@ -13,10 +13,12 @@ namespace UnityMobileHaptics {
         void Play(HapticType type);
 
         /// <summary>
-        /// 停止されるまで継続振動を再生
+        /// 強度と時間を指定する可変制御振動を再生
         /// </summary>
-        /// <param name="type">振動種別</param>
-        void PlayLoop(ImpactHapticType type);
+        /// <param name="intensity">振動強度</param>
+        /// <param name="durationSeconds">振動時間</param>
+        /// <param name="loop">停止されるまで繰り返す場合は true</param>
+        void PlayPulse(float intensity, float durationSeconds, bool loop);
 
         /// <summary>
         /// 再生中の振動を停止

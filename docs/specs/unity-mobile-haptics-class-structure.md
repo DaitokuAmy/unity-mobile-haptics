@@ -13,8 +13,7 @@ Packages/com.daitokuamy.unitymobilehaptics/
     Runtime/
       MobileHaptics.cs
       HapticType.cs
-      ImpactHapticType.cs
-      HapticPlayMode.cs
+      HapticPlaybackHandle.cs
       IMobileHapticsPlatform.cs
       Internal/
         MobileHapticsPlatformFactory.cs
@@ -40,28 +39,26 @@ Packages/com.daitokuamy.unitymobilehaptics/
 ### `MobileHaptics`
 
 - ライブラリの公開エントリポイント
-- `IsSupported`、`Play`、`PlayLoop`、`Stop` を提供する
+- `IsSupported`、`Play`、`PlayPulse`、`Stop` を提供する
+- `PlayPulse` は `loop` 引数で単発再生と反復再生を切り替える
 - 実際の再生処理はプラットフォーム実装へ委譲する
 
 ### `HapticType`
 
 - 振動種別を表す enum
+- ネイティブ定義済みの定数的な振動のみを扱う
 - 呼び出し側はネイティブ API ではなくこの型を使う
 
-### `ImpactHapticType`
+### `HapticPlaybackHandle`
 
-- Loop 再生可能な衝撃系振動種別を表す enum
-- `PlayLoop` の引数として利用する
-
-### `HapticPlayMode`
-
-- 単発再生か Loop 再生かを表す enum
-- Runtime と Editor の間で再生状態を共通表現として扱うために利用する
+- `PlayPulse` が返す停止用ハンドル
+- 現在の再生インスタンスにのみ紐づき、上書き再生後は無効化される
+- `IsValid` と `Stop()` を提供する
 
 ### `IMobileHapticsPlatform`
 
 - プラットフォーム実装の共通インターフェース
-- `IsSupported`、`Play`、`PlayLoop`、`Stop` を定義する
+- `IsSupported`、`Play`、`PlayPulse`、`Stop` を定義する
 
 ## Runtime Internal
 
@@ -82,30 +79,34 @@ Packages/com.daitokuamy.unitymobilehaptics/
 
 - Android 向けの振動処理を実装する
 - OS バージョン差分を吸収する
-- `Play` は通知系と衝撃系の両方を扱い、`PlayLoop` は `ImpactHapticType` のみを扱う
+- `Play` はネイティブ定義済み振動を扱う
+- `PlayPulse` は強度と時間を指定する可変制御振動を扱う
+- `loop` が `true` の場合は Android 側で反復再生を継続し、停止要求で解除する
 
 ### `IosMobileHapticsPlatform`
 
 - iOS 向けの振動処理を実装する
 - `HapticType` を iOS ネイティブ機能へ変換する
-- `PlayLoop` は `ImpactHapticType` を iOS 側の impact 表現へ変換する
+- `PlayPulse` は iOS 側の可変制御ハプティクス表現へ変換する
+- `loop` が `true` の場合は iOS 側で再スケジュールまたは近似再生を行う
 
 ### `UnsupportedMobileHapticsPlatform`
 
 - 非対応環境向けの no-op 実装
 - `IsSupported` は `false` を返す
+- `PlayPulse` は無効ハンドルを返す
 
 ## Editor
 
 ### `MobileHapticsSimulationWindow`
 
 - 開発中の振動状態を確認する専用 `EditorWindow`
-- 現在の再生状態、再生種別、Loop 状態を表示する
+- 現在の再生状態、再生種別、強度、再生時間、ループ状態を表示する
 
 ### `MobileHapticsSimulationState`
 
 - EditorWindow で表示するシミュレーション状態を保持する
-- 最後に再生された `HapticType`、再生中フラグ、Loop 状態などを持つ
+- 最後に再生された `HapticType`、可変制御振動の強度と時間、ループ状態、再生中フラグ、ハンドル状態などを持つ
 
 ### `MobileHapticsSimulationView`
 
@@ -118,7 +119,7 @@ Packages/com.daitokuamy.unitymobilehaptics/
 
 - Android ネイティブ API を呼び出すブリッジクラスを含む AAR
 - C# から `AndroidJavaClass` で内部クラスを呼び出す想定
-- 単発振動、Loop 振動、停止を提供する
+- 単発振動、可変制御振動、停止を提供する
 
 ### `UnityMobileHapticsiOSBridge.h`
 
@@ -129,11 +130,11 @@ Packages/com.daitokuamy.unitymobilehaptics/
 
 - iOS の実処理を実装する
 - `HapticType` に応じたネイティブハプティクス呼び出しを担当する
-- 単発振動、Loop 相当処理、停止を提供する
+- 単発振動、可変制御振動、停止を提供する
 
 ## メモ
 
 - 最初はクラス数を絞り、複雑化した時点で分割してもよい
-- `HapticPlayMode` や `MobileHapticsSimulationView` は不要なら後から省略できる
+- `MobileHapticsSimulationView` は不要なら後から省略できる
 - Android は `.aar` 配布を基本とし、ソースは別ディレクトリで管理する
 - iOS は実装都合に応じて `.m` または追加ファイルへ分割してよい
