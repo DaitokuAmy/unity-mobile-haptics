@@ -14,11 +14,15 @@ namespace UnityMobileHaptics.Editor {
         private const float ButtonSpacing = 6f;
         private const float ButtonMinWidth = 72f;
         private const float ButtonMaxWidth = 96f;
+        private const float PulseSectionHeight = 182f;
 
         private GUIStyle _titleStyle;
         private GUIStyle _captionStyle;
         private GUIStyle _metricStyle;
         private GUIStyle _buttonStyle;
+        private float _pulseIntensity = 0.5f;
+        private float _pulseDurationSeconds = 0.5f;
+        private bool _pulseLoop;
 
         /// <summary>
         /// シミュレーションウィンドウの UI を描画
@@ -31,8 +35,6 @@ namespace UnityMobileHaptics.Editor {
                 DrawHeader();
                 GUILayout.Space(6f);
                 DrawVisualizer(state);
-                GUILayout.Space(8f);
-                DrawTimeline(state);
                 GUILayout.Space(8f);
                 DrawMetrics(state);
                 GUILayout.Space(10f);
@@ -78,7 +80,10 @@ namespace UnityMobileHaptics.Editor {
             DrawBadge(badgeRect, state.IsActiveVisual ? "ACTIVE" : "IDLE", state.IsActiveVisual ? state.AccentColor : IdleColor);
 
             var modeRect = new Rect(rect.xMax - 92f, rect.y + 12f, 78f, 20f);
-            DrawBadge(modeRect, state.PlayModeText.ToUpperInvariant(), state.IsLoopMode ? new Color(0.91f, 0.51f, 0.27f) : new Color(0.32f, 0.72f, 0.98f));
+            var modeColor = state.IsPulsePlayback
+                ? state.AccentColor
+                : state.IsLoopMode ? new Color(0.91f, 0.51f, 0.27f) : new Color(0.32f, 0.72f, 0.98f);
+            DrawBadge(modeRect, state.PlayModeText.ToUpperInvariant(), modeColor);
 
             var typeRect = new Rect(rect.x, rect.yMax - 34f, rect.width, 18f);
             GUI.Label(typeRect, state.LastTypeText, EditorStyles.whiteLargeLabel);
@@ -88,10 +93,11 @@ namespace UnityMobileHaptics.Editor {
         /// 時間進行と終了状態を描画する
         /// </summary>
         private void DrawTimeline(MobileHapticsSimulationState state) {
-            var rect = GUILayoutUtility.GetRect(10f, 68f, GUILayout.ExpandWidth(true));
+            var rect = GUILayoutUtility.GetRect(10f, 60f, GUILayout.ExpandWidth(true));
             EditorGUI.DrawRect(rect, PanelColor);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4f, rect.height), state.AccentColor);
 
-            var trackRect = new Rect(rect.x + 14f, rect.y + 20f, rect.width - 28f, 12f);
+            var trackRect = new Rect(rect.x + 16f, rect.y + 16f, rect.width - 28f, 12f);
             EditorGUI.DrawRect(trackRect, TrackColor);
 
             if (state.IsLoopMode) {
@@ -100,10 +106,10 @@ namespace UnityMobileHaptics.Editor {
                     var startX = trackRect.x + (trackRect.width - segmentWidth) * state.Progress;
                     var fillRect = new Rect(startX, trackRect.y, segmentWidth, trackRect.height);
                     EditorGUI.DrawRect(fillRect, state.AccentColor);
-                    GUI.Label(new Rect(trackRect.x, rect.y + 40f, rect.width - 28f, 18f), "Loop pulse is cycling", _captionStyle);
+                    GUI.Label(new Rect(trackRect.x, rect.y + 34f, rect.width - 28f, 18f), "Loop pulse is cycling", _captionStyle);
                 }
                 else {
-                    GUI.Label(new Rect(trackRect.x, rect.y + 40f, rect.width - 28f, 18f), "Loop stopped", _captionStyle);
+                    GUI.Label(new Rect(trackRect.x, rect.y + 34f, rect.width - 28f, 18f), "Loop stopped", _captionStyle);
                 }
 
                 return;
@@ -120,7 +126,7 @@ namespace UnityMobileHaptics.Editor {
                 ? $"OneShot active {state.RemainingSeconds:0.000}s left"
                 : "OneShot finished";
 
-            GUI.Label(new Rect(trackRect.x, rect.y + 40f, rect.width - 28f, 18f), statusText, _captionStyle);
+            GUI.Label(new Rect(trackRect.x, rect.y + 34f, rect.width - 28f, 18f), statusText, _captionStyle);
         }
 
         /// <summary>
@@ -128,9 +134,9 @@ namespace UnityMobileHaptics.Editor {
         /// </summary>
         private void DrawMetrics(MobileHapticsSimulationState state) {
             using (new EditorGUILayout.HorizontalScope()) {
+                DrawTimeline(state);
                 DrawMetricCard("Intensity", $"{Mathf.RoundToInt(state.VisualIntensity * 100f)}%", state.AccentColor);
                 DrawMetricCard("Duration", $"{state.ExpectedDurationSeconds:0.000}s", state.AccentColor);
-                DrawMetricCard("Updated", state.LastUpdatedUtc == System.DateTime.MinValue ? "--" : state.LastUpdatedUtc.ToLocalTime().ToString("HH:mm:ss"), state.IsSupported ? new Color(0.35f, 0.82f, 0.56f) : new Color(0.7f, 0.7f, 0.76f));
             }
         }
 
@@ -148,28 +154,7 @@ namespace UnityMobileHaptics.Editor {
                 ("Warning", () => MobileHaptics.Play(HapticType.Warning)),
                 ("Error", () => MobileHaptics.Play(HapticType.Error))
             );
-            DrawActionSection(
-                "Pulse",
-                "強度と時間を指定する可変制御振動",
-                new Color(0.93f, 0.48f, 0.37f),
-                ("Soft", () => MobileHaptics.PlayPulse(0.25f, 0.05f)),
-                ("Medium", () => MobileHaptics.PlayPulse(0.55f, 0.12f)),
-                ("Strong", () => MobileHaptics.PlayPulse(0.9f, 0.2f))
-            );
-            DrawActionSection(
-                "Loop",
-                "Pulse を停止まで反復再生",
-                new Color(0.98f, 0.65f, 0.3f),
-                ("Loop Soft", () => MobileHaptics.PlayPulse(0.25f, 0.05f, true)),
-                ("Loop Mid", () => MobileHaptics.PlayPulse(0.55f, 0.12f, true)),
-                ("Loop Strong", () => MobileHaptics.PlayPulse(0.9f, 0.2f, true))
-            );
-            DrawActionSection(
-                "Control",
-                "現在の再生を停止",
-                new Color(0.93f, 0.38f, 0.37f),
-                ("Stop", MobileHaptics.Stop)
-            );
+            DrawPulseSection();
         }
 
         /// <summary>
@@ -204,6 +189,58 @@ namespace UnityMobileHaptics.Editor {
                 if (GUI.Button(buttonRect, actions[i].Label, _buttonStyle)) {
                     actions[i].Action();
                 }
+            }
+        }
+
+        /// <summary>
+        /// 可変制御振動の入力 UI を描画する
+        /// </summary>
+        private void DrawPulseSection() {
+            var accentColor = new Color(0.92f, 0.36f, 0.78f);
+            var rect = GUILayoutUtility.GetRect(10f, PulseSectionHeight, GUILayout.ExpandWidth(true));
+
+            EditorGUI.DrawRect(rect, PanelColor);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, 4f, rect.height), accentColor);
+
+            GUI.Label(new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, 18f), "Pulse", _titleStyle);
+            GUI.Label(new Rect(rect.x + 12f, rect.y + 24f, rect.width - 24f, 16f), "強度と時間を指定する可変制御振動", _captionStyle);
+
+            var contentRect = new Rect(rect.x + 12f, rect.y + 44f, rect.width - 24f, rect.height - 56f);
+            DrawPulseFields(contentRect);
+        }
+
+        /// <summary>
+        /// Pulse の入力項目と操作ボタンを描画する
+        /// </summary>
+        /// <param name="rect">描画領域</param>
+        private void DrawPulseFields(Rect rect) {
+            var intensityLabelRect = new Rect(rect.x, rect.y, rect.width, 16f);
+            var intensitySliderRect = new Rect(rect.x, rect.y + 18f, rect.width - 72f, 16f);
+            var intensityValueRect = new Rect(rect.xMax - 64f, rect.y + 16f, 64f, 18f);
+            var durationLabelRect = new Rect(rect.x, rect.y + 42f, rect.width, 16f);
+            var durationSliderRect = new Rect(rect.x, rect.y + 60f, rect.width - 72f, 16f);
+            var durationValueRect = new Rect(rect.xMax - 64f, rect.y + 58f, 64f, 18f);
+            var loopRect = new Rect(rect.x, rect.y + 84f, 96f, 18f);
+            var buttonWidth = Mathf.Min(120f, (rect.width - ButtonSpacing) * 0.5f);
+            var playRect = new Rect(rect.x, rect.y + 106f, buttonWidth, ButtonHeight);
+            var stopRect = new Rect(rect.x + buttonWidth + ButtonSpacing, rect.y + 106f, buttonWidth, ButtonHeight);
+
+            GUI.Label(intensityLabelRect, "Intensity", _captionStyle);
+            _pulseIntensity = EditorGUI.Slider(intensitySliderRect, GUIContent.none, _pulseIntensity, 0f, 1f);
+            GUI.Label(intensityValueRect, $"{_pulseIntensity:0.00}", _captionStyle);
+
+            GUI.Label(durationLabelRect, "Duration", _captionStyle);
+            _pulseDurationSeconds = EditorGUI.Slider(durationSliderRect, GUIContent.none, _pulseDurationSeconds, 0.01f, 10f);
+            GUI.Label(durationValueRect, $"{_pulseDurationSeconds:0.00}s", _captionStyle);
+
+            _pulseLoop = EditorGUI.ToggleLeft(loopRect, "Loop", _pulseLoop);
+
+            if (GUI.Button(playRect, "Play", _buttonStyle)) {
+                MobileHaptics.PlayPulse(_pulseIntensity, _pulseDurationSeconds, _pulseLoop);
+            }
+
+            if (GUI.Button(stopRect, "Stop", _buttonStyle)) {
+                MobileHaptics.Stop();
             }
         }
 

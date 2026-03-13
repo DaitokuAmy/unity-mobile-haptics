@@ -197,9 +197,7 @@ namespace UnityMobileHaptics.Editor {
         /// </summary>
         private Color GetAccentColor() {
             if (IsPulsePlayback) {
-                return IsLoopMode
-                    ? new Color(0.98f, 0.65f, 0.3f)
-                    : new Color(0.93f, 0.48f, 0.37f);
+                return new Color(0.92f, 0.36f, 0.78f);
             }
 
             switch (LastType) {
