@@ -110,7 +110,7 @@ namespace UnityMobileHaptics.Editor {
 
             var duration = Mathf.Max(ExpectedDurationSeconds, 0.01f);
             var progress = Mathf.Clamp01((float)(elapsedSeconds / duration));
-            var pulse = Mathf.Sin(progress * Mathf.PI);
+            var pulse = GetOneShotEnvelope(progress);
             var strength = GetBaseStrength();
 
             IsActiveVisual = progress < 1f;
@@ -160,11 +160,11 @@ namespace UnityMobileHaptics.Editor {
                 case HapticType.Selection:
                     return 0.08f;
                 case HapticType.Success:
-                    return 0.18f;
+                    return 0.16f;
                 case HapticType.Warning:
-                    return 0.24f;
+                    return 0.26f;
                 case HapticType.Error:
-                    return 0.3f;
+                    return 0.28f;
                 default:
                     return 0.12f;
             }
@@ -190,6 +190,62 @@ namespace UnityMobileHaptics.Editor {
                 default:
                     return 0.5f;
             }
+        }
+
+        /// <summary>
+        /// OneShot 種別ごとの見た目用エンベロープを返す
+        /// </summary>
+        private float GetOneShotEnvelope(float progress) {
+            if (IsPulsePlayback) {
+                return Mathf.Sin(progress * Mathf.PI);
+            }
+
+            switch (LastType) {
+                case HapticType.Selection:
+                    return EvaluateImpact(progress, 0.08f, 0.62f, 1f, 1.15f);
+                case HapticType.Success:
+                    return EvaluateImpact(progress, 0.06f, 0.58f, 1.08f, 1.35f);
+                case HapticType.Warning:
+                    return EvaluateMultiImpact(
+                        progress,
+                        (0.08f, 0.28f, 0.76f, 1.25f),
+                        (0.54f, 0.76f, 0.68f, 1.2f)
+                    );
+                case HapticType.Error:
+                    return EvaluateMultiImpact(
+                        progress,
+                        (0.06f, 0.28f, 0.82f, 1.35f),
+                        (0.48f, 0.74f, 1f, 1.4f)
+                    );
+                default:
+                    return Mathf.Sin(progress * Mathf.PI);
+            }
+        }
+
+        /// <summary>
+        /// 区間内だけ立ち上がる衝撃波形を返す
+        /// </summary>
+        private static float EvaluateImpact(float progress, float start, float end, float amplitude = 1f, float sharpness = 1f) {
+            if (progress < start || progress > end) {
+                return 0f;
+            }
+
+            var localProgress = Mathf.InverseLerp(start, end, progress);
+            var pulse = Mathf.Sin(localProgress * Mathf.PI);
+            return Mathf.Pow(Mathf.Clamp01(pulse), sharpness) * amplitude;
+        }
+
+        /// <summary>
+        /// 複数の衝撃波形から最大値を返す
+        /// </summary>
+        private static float EvaluateMultiImpact(float progress, params (float Start, float End, float Amplitude, float Sharpness)[] impacts) {
+            var maxValue = 0f;
+            for (var i = 0; i < impacts.Length; i++) {
+                var impact = impacts[i];
+                maxValue = Mathf.Max(maxValue, EvaluateImpact(progress, impact.Start, impact.End, impact.Amplitude, impact.Sharpness));
+            }
+
+            return maxValue;
         }
 
         /// <summary>
