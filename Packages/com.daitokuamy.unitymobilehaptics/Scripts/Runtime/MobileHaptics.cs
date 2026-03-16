@@ -24,6 +24,9 @@ namespace UnityMobileHaptics {
         /// <summary>現在の実行環境で振動再生をサポートしている場合は true</summary>
         public static bool IsSupported => Platform.IsSupported;
 
+        /// <summary>有効状態</summary>
+        public static bool IsEnabled { get; set; } = true;
+
         /// <summary>現在の実行環境に対応した振動実装</summary>
         private static IMobileHapticsPlatform Platform => s_platform ??= MobileHapticsPlatformFactory.Create();
 
@@ -32,6 +35,10 @@ namespace UnityMobileHaptics {
         /// </summary>
         /// <param name="type">振動種別</param>
         public static void Play(HapticType type) {
+            if (!IsEnabled) {
+                return;
+            }
+            
             Platform.Play(type);
             ClearActivePlayback();
             MobileHapticsEditorBridge.NotifyPlayed(type, Platform.IsSupported);
@@ -45,6 +52,10 @@ namespace UnityMobileHaptics {
         /// <param name="loop">停止されるまで繰り返す場合は true</param>
         /// <returns>停止用ハンドル</returns>
         public static HapticPlaybackHandle PlayPulse(float intensity, float durationSeconds, bool loop = false) {
+            if (!IsEnabled) {
+                return default;
+            }
+            
             var clampedIntensity = Mathf.Clamp01(intensity);
             var clampedDuration = Mathf.Max(0.01f, durationSeconds);
             var isSupported = Platform.IsSupported;
